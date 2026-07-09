@@ -1,0 +1,310 @@
+{
+  "info": {
+    "name": "Event Budgeting API",
+    "description": "Multi-tenant event budgeting platform. Run requests top to bottom — token, workspaceId, eventId, itemId and proposalId are captured automatically.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "token", "value": "" },
+    { "key": "workspaceId", "value": "" },
+    { "key": "eventId", "value": "" },
+    { "key": "itemId", "value": "" },
+    { "key": "proposalId", "value": "" },
+    { "key": "email", "value": "alice@example.com" },
+    { "key": "password", "value": "password123" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.collectionVariables.set('token', res.accessToken);",
+                  "pm.collectionVariables.set('workspaceId', res.workspaceId);",
+                  "pm.test('has token', () => pm.expect(res.accessToken).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"workspaceName\": \"Alice's Events\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.collectionVariables.set('token', res.accessToken);",
+                  "if (res.workspaceIds && res.workspaceIds.length) {",
+                  "  pm.collectionVariables.set('workspaceId', res.workspaceIds[0]);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/auth/me", "host": ["{{baseUrl}}"], "path": ["auth", "me"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Events",
+      "item": [
+        {
+          "name": "Create Event",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.collectionVariables.set('eventId', res.id);",
+                  "pm.test('event created', () => pm.expect(res.id).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-workspace-id", "value": "{{workspaceId}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/events", "host": ["{{baseUrl}}"], "path": ["events"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Company Summit 2025\",\n  \"date\": \"2025-11-14\",\n  \"currency\": \"USD\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List Events",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-workspace-id", "value": "{{workspaceId}}" }],
+            "url": { "raw": "{{baseUrl}}/events", "host": ["{{baseUrl}}"], "path": ["events"] }
+          }
+        },
+        {
+          "name": "Get Event (with budget summary)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-workspace-id", "value": "{{workspaceId}}" }],
+            "url": { "raw": "{{baseUrl}}/events/{{eventId}}", "host": ["{{baseUrl}}"], "path": ["events", "{{eventId}}"] }
+          }
+        },
+        {
+          "name": "Update Event",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-workspace-id", "value": "{{workspaceId}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/events/{{eventId}}", "host": ["{{baseUrl}}"], "path": ["events", "{{eventId}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Company Summit 2025 (Updated)\"\n}" }
+          }
+        },
+        {
+          "name": "Delete Event",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "x-workspace-id", "value": "{{workspaceId}}" }],
+            "url": { "raw": "{{baseUrl}}/events/{{eventId}}", "host": ["{{baseUrl}}"], "path": ["events", "{{eventId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Budget Items",
+      "item": [
+        {
+          "name": "Add Budget Item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.collectionVariables.set('itemId', res.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-workspace-id", "value": "{{workspaceId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{eventId}}/budget-items",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "{{eventId}}", "budget-items"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"Venue\",\n  \"description\": \"Main hall rental\",\n  \"amount\": 5000,\n  \"currency\": \"USD\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List Budget Items",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-workspace-id", "value": "{{workspaceId}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{eventId}}/budget-items",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "{{eventId}}", "budget-items"]
+            }
+          }
+        },
+        {
+          "name": "Update Budget Item",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-workspace-id", "value": "{{workspaceId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{eventId}}/budget-items/{{itemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "{{eventId}}", "budget-items", "{{itemId}}"]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": 5500\n}" }
+          }
+        },
+        {
+          "name": "Delete Budget Item",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "x-workspace-id", "value": "{{workspaceId}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{eventId}}/budget-items/{{itemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "{{eventId}}", "budget-items", "{{itemId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI Assistant",
+      "item": [
+        {
+          "name": "Chat (generate proposal)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "pm.collectionVariables.set('proposalId', res.id);",
+                  "pm.test('proposal is pending', () => pm.expect(res.status).to.eql('PENDING'));",
+                  "pm.test('has line items', () => pm.expect(res.items.length).to.be.above(0));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-workspace-id", "value": "{{workspaceId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{eventId}}/ai/chat",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "{{eventId}}", "ai", "chat"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Draft a budget for a 200-person indoor tech summit with catering, AV, and marketing.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Pending Proposal",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-workspace-id", "value": "{{workspaceId}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{eventId}}/ai/proposals/pending",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "{{eventId}}", "ai", "proposals", "pending"]
+            }
+          }
+        },
+        {
+          "name": "Approve Proposal",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "x-workspace-id", "value": "{{workspaceId}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{eventId}}/ai/proposals/{{proposalId}}/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "{{eventId}}", "ai", "proposals", "{{proposalId}}", "approve"]
+            }
+          }
+        },
+        {
+          "name": "Reject Proposal",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "x-workspace-id", "value": "{{workspaceId}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{eventId}}/ai/proposals/{{proposalId}}/reject",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "{{eventId}}", "ai", "proposals", "{{proposalId}}", "reject"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,93 @@
+// Prisma schema — MySQL
+// Multi-tenant model: users belong to workspaces via a Membership join table.
+// Events are always scoped to a workspace; budget items to an event.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String       @id @default(uuid())
+  email       String       @unique
+  password    String // bcrypt hash
+  memberships Membership[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Workspace {
+  id          String       @id @default(uuid())
+  name        String
+  memberships Membership[]
+  events      Event[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+// Join table: a user can belong to many workspaces, a workspace has many users.
+model Membership {
+  id          String    @id @default(uuid())
+  userId      String
+  workspaceId String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, workspaceId])
+  @@index([workspaceId])
+}
+
+model Event {
+  id          String       @id @default(uuid())
+  title       String
+  date        DateTime
+  currency    String // ISO 4217, e.g. "USD"
+  workspaceId String
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  budgetItems BudgetItem[]
+  proposals   Proposal[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([workspaceId])
+}
+
+model BudgetItem {
+  id          String   @id @default(uuid())
+  category    String
+  description String   @db.Text
+  amount      Decimal  @db.Decimal(14, 2)
+  currency    String
+  eventId     String
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([eventId])
+}
+
+enum ProposalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// An AI-generated budget proposal. Stored as a pending action; the proposed
+// line items live in `items` (JSON) and are only written to BudgetItem on approval.
+model Proposal {
+  id        String         @id @default(uuid())
+  eventId   String
+  event     Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userMessage String       @db.Text // the prompt the user sent
+  items     Json // proposed line items: [{ category, description, amount, currency }]
+  status    ProposalStatus @default(PENDING)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([eventId, status])
+}
