@@ -34,7 +34,7 @@ export class AuthService {
 
     const { user, workspace } = await this.prisma.$transaction(async (tx) => {
       const workspace = await tx.workspace.create({
-        data: { name: dto.workspaceName ?? `${dto.email}'s workspace` },
+        data: { name: dto.workspaceName },
       });
       const user = await tx.user.create({
         data: { email: dto.email, password: passwordHash },

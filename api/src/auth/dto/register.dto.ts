@@ -1,4 +1,5 @@
-import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsString, MaxLength, MinLength } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class RegisterDto {
   @IsEmail()
@@ -8,8 +9,10 @@ export class RegisterDto {
   @MinLength(8)
   password: string;
 
-  // Optional name for the workspace created on registration.
-  @IsOptional()
+  // Name for the workspace created on registration. Required.
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
-  workspaceName?: string;
+  @MinLength(1)
+  @MaxLength(100)
+  workspaceName: string;
 }

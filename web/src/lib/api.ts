@@ -45,7 +45,7 @@ export interface AuthResponse {
 }
 
 export const authApi = {
-  register: (body: { email: string; password: string; workspaceName?: string }) =>
+  register: (body: { email: string; password: string; workspaceName: string }) =>
     http.post<AuthResponse>('/auth/register', body).then((r) => r.data),
   login: (body: { email: string; password: string }) =>
     http.post<AuthResponse>('/auth/login', body).then((r) => r.data),

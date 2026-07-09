@@ -10,6 +10,7 @@ export function LoginPage() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [workspaceName, setWorkspaceName] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -21,7 +22,11 @@ export function LoginPage() {
       const res: AuthResponse =
         mode === 'login'
           ? await authApi.login({ email, password })
-          : await authApi.register({ email, password });
+          : await authApi.register({
+              email,
+              password,
+              workspaceName: workspaceName.trim(),
+            });
 
       const workspaceId = res.workspaceId ?? res.workspaceIds?.[0];
       if (!workspaceId) {
@@ -67,6 +72,21 @@ export function LoginPage() {
             required
           />
         </label>
+
+        {mode === 'register' && (
+          <label>
+            Workspace name
+            <input
+              type="text"
+              value={workspaceName}
+              autoComplete="organization"
+              placeholder="Acme Events"
+              maxLength={100}
+              onChange={(e) => setWorkspaceName(e.target.value)}
+              required
+            />
+          </label>
+        )}
 
         {error && <p className="error">{error}</p>}
 
